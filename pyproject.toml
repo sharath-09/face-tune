@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "face-tune"
+version = "0.1.0"
+description = "Align face movements to music"
+authors = ["Sharath <a1768686@student.adelaide.edu.au>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+insightface = "^0.7.3"
+onnxruntime = "^1.20.1"
+scipy = "^1.15.1"
+
+[tool.poetry.group.dev.dependencies]
+mdformat = "^0.7.19"
+ruff = "^0.6.8"
+mypy = "^1.11.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
