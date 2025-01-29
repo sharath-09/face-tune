@@ -1,4 +1,5 @@
 import queue
+import threading
 import numpy as np
 from pedalboard.io import AudioStream
 from pedalboard.io import AudioFile
@@ -7,7 +8,7 @@ from pedalboard import Reverb
 from pedalboard import Pedalboard, Compressor
 
 import sounddevice as sd
-import ffmpeg
+import soundfile as sf
 
 from stream import Stream
 
@@ -32,7 +33,7 @@ with AudioFile(AUDIO_2) as f:
     duration = f.duration
     sample_rate = f.samplerate
     audio = f.read(f.samplerate * int(duration))
-    frames = f
+    frames = f.frames
 
 step_size_in_samples = sample_rate * 5
 
@@ -77,58 +78,48 @@ def callback(outdata, frames, time, status):
     except queue.Empty as e:
         print('Buffer is empty: increase buffersize?')
         raise sd.CallbackAbort from e
-    print(f"data size: {len(data)}")
-    print(len(outdata))
-    assert len(data) == len(outdata)
-    outdata[:] = data
+    if len(data) < len(outdata):
+            outdata[:len(data)] = data
+            outdata[len(data):].fill(0)
+            raise sd.CallbackStop
+    else:
+        outdata[:] = data
+
+event = threading.Event()
 
 try:
     print('Opening stream ...')
+    with sf.SoundFile(AUDIO_2) as f:
+        stream = sd.OutputStream(
+            samplerate=sample_rate, blocksize=blocksize,
+            device=output_device_name, channels=num_channels, dtype='float32',
+            callback=callback)
 
-    stream = sd.OutputStream(
-        samplerate=sample_rate, blocksize=blocksize,
-        device=output_device_name, channels=num_channels, dtype='float32',
-        callback=callback)
-    read_size = blocksize
-    start = 0
+        print('Buffering ...')
+        for _ in range(buffersize):
+            data = f.read(blocksize)
+            if not len(data):
+                break
+            q.put_nowait(data)  # Pre-fill queue
 
-    print('Buffering ...')
-    print(f"Read size {read_size}")
-    print(f"Audio stream : {audio.shape}")
-
-    for _ in range(buffersize):
-        q.put_nowait(audio[:, start : start + read_size].T)
-        start += read_size
-
-    print('Starting Playback ...')
-    start = 0
-    with stream:
-        timeout = (blocksize * buffersize) / sample_rate
-        while True:
-            q.put(audio[:, start : start + read_size].T, timeout=timeout)
-            start += read_size
+        print('Starting Playback ...')
+        start = 0
+        with stream:
+            timeout = blocksize * buffersize / f.samplerate
+            frames_progressed = 0
+            while len(data):
+                data = f.read(blocksize)
+                frames_progressed += 1
+                percentage_through_track = frames_progressed / 10
+                if percentage_through_track > 1:
+                    percentage_through_track = 1
+                reverb.wet_level = percentage_through_track
+                # Process this chunk of audio, setting `reset` to `False`
+                # to ensure that reverb tails aren't cut off
+                output = board.process(data.T, sample_rate, reset=False)
+                print(f"Setting wet level to {percentage_through_track}")
+                q.put(output.T, timeout=timeout)
+            event.wait()  # Wait until playback is finished
 except KeyboardInterrupt:
     print('\nInterrupted by user')
     sd.stop()
-
-# with AudioStream(input_device_name, output_device_name) as stream:
-#     # In this block, audio is streaming through `stream`!
-#     # Audio will be coming out of your speakers at this point.
-
-#     gain = Gain()
-#     stream.plugins.append(gain)
-
-#     # Add plugins to the live audio stream:
-#     reverb = Reverb()
-#     # stream.plugins.append(reverb)
-
-#     # Change plugin properties as the stream is running:
-#     reverb.wet_level = 1.0
-
-#     # Delete plugins:
-#     del stream.plugins[0]
-# 
-# Or use AudioStream synchronously:
-# stream = AudioStream(input_device_name, output_device_name)
-# stream.plugins.append(Reverb(wet_level=1.0))
-# stream.run()  # Run the stream until Ctrl-C is received
