@@ -23,3 +23,7 @@ TBD
 ## 📂 Repository Structure
 
 TBD
+
+## Known Issues
+
+- Onnxruntime locked to 1.20.0 as having issues on macos==13.0
