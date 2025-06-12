@@ -5,7 +5,8 @@ from pedalboard.io import AudioStream
 from pedalboard.io import AudioFile
 
 from pedalboard import Reverb
-from pedalboard import Pedalboard, Compressor
+from pedalboard import Pedalboard, Compressor, LowpassFilter
+from scipy.signal import butter, lfilter
 
 import sounddevice as sd
 import soundfile as sf
@@ -24,7 +25,7 @@ num_channels = 2
 blocksize = 1024
 buffersize = 20
 
-stream = Stream()
+# stream = Stream()
 
 q = queue.Queue(maxsize=buffersize)
 
@@ -49,23 +50,9 @@ def play_audio(audio_chunk: np.ndarray):
     sd.play(audio_chunk, sample_rate, blocking=False)
     sd.wait()
 
-board = Pedalboard([Compressor(), Reverb()])
-reverb = board[1]
-
-# with AudioFile(AUDIO_2) as af:
-#     for i in range(0, af.frames, step_size_in_samples):
-#         chunk = af.read(step_size_in_samples)
-
-#         # Set the reverb's "wet" parameter to be equal to the
-#         # percentage through the track (i.e.: make a ramp from 0% to 100%)
-#         percentage_through_track = i / af.frames
-#         reverb.wet_level = percentage_through_track
-
-#         # Process this chunk of audio, setting `reset` to `False`
-#         # to ensure that reverb tails aren't cut off
-#         output = board.process(chunk, af.samplerate, reset=False)
-#         play_audio(output.T)
-
+board = Pedalboard([LowpassFilter()])
+# reverb = board[1]
+low_pass_filter = board[0]
 
 def callback(outdata, frames, time, status):
     assert frames == blocksize
@@ -107,17 +94,16 @@ try:
         with stream:
             timeout = blocksize * buffersize / f.samplerate
             frames_progressed = 0
+            count = 0
+            frames_in_song = (sample_rate * duration) / blocksize
             while len(data):
                 data = f.read(blocksize)
-                frames_progressed += 1
-                percentage_through_track = frames_progressed / 10
-                if percentage_through_track > 1:
-                    percentage_through_track = 1
-                reverb.wet_level = percentage_through_track
+                count += blocksize
+                low_pass_filter.cutoff_frequency_hz = 50
                 # Process this chunk of audio, setting `reset` to `False`
                 # to ensure that reverb tails aren't cut off
                 output = board.process(data.T, sample_rate, reset=False)
-                print(f"Setting wet level to {percentage_through_track}")
+                # output = apply_bass_boost(output, cutoff=800)
                 q.put(output.T, timeout=timeout)
             event.wait()  # Wait until playback is finished
 except KeyboardInterrupt:
