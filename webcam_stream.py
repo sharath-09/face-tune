@@ -3,7 +3,6 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
-from insightface.data import get_image as ins_get_image
 from insightface.app import FaceAnalysis
 
 from plot import get_slope, plot_positions, plot_y_axis_over_time
@@ -17,7 +16,7 @@ def stream(model):
     slopes = []
     prev_lmk = None
     try:
-        cap = cv2.VideoCapture(1)
+        cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             print("Cannot open camera")
             exit()
@@ -51,7 +50,7 @@ def stream(model):
         cap.release()
         cv2.destroyAllWindows()
         print(slopes)
-        plot_positions(np.array(lmk_positions))
+        # plot_positions(np.array(lmk_posiations))
         plot_y_axis_over_time(np.array(lmk_positions))
 
 def main():

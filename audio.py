@@ -38,6 +38,7 @@ with AudioFile(AUDIO_2) as f:
 
 step_size_in_samples = sample_rate * 5
 
+
 # stream = AudioStream(input_device_name, output_device_name)
 reverb = Reverb()
 
