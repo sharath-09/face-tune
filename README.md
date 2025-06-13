@@ -20,6 +20,10 @@ TBD
 
 ---
 
+## Models
+
+- Download `buffalo_l` from insightface
+
 ## 📂 Repository Structure
 
 TBD
