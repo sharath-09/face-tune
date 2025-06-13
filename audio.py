@@ -43,16 +43,8 @@ step_size_in_samples = sample_rate * 5
 # stream = AudioStream(input_device_name, output_device_name)
 reverb = Reverb()
 
-def play_audio(audio_chunk: np.ndarray):
-    """Plays an input audio stream
+board = Pedalboard([LowpassFilter()]) 
 
-    Args:
-        audio_chunk (np.ndarray): Audio stream.
-    """    
-    sd.play(audio_chunk, sample_rate, blocking=False)
-    sd.wait()
-
-board = Pedalboard([LowpassFilter()])
 # reverb = board[1]
 low_pass_filter = board[0]
 
@@ -76,38 +68,47 @@ def callback(outdata, frames, time, status):
 
 event = threading.Event()
 
-try:
-    print('Opening stream ...')
-    with sf.SoundFile(AUDIO_2) as f:
-        stream = sd.OutputStream(
-            samplerate=sample_rate, blocksize=blocksize,
-            device=output_device_name, channels=num_channels, dtype='float32',
-            callback=callback)
+def play_audio():
+    """Plays an input audio stream
 
-        print('Buffering ...')
-        for _ in range(buffersize):
-            data = f.read(blocksize)
-            if not len(data):
-                break
-            q.put_nowait(data)  # Pre-fill queue
+    Args:
+        audio_chunk (np.ndarray): Audio stream.
+    """    
+    try:
+        print('Opening stream ...')
+        with sf.SoundFile(AUDIO_2) as f:
+            stream = sd.OutputStream(
+                samplerate=sample_rate, blocksize=blocksize,
+                device=output_device_name, channels=num_channels, dtype='float32',
+                callback=callback)
 
-        print('Starting Playback ...')
-        start = 0
-        with stream:
-            timeout = blocksize * buffersize / f.samplerate
-            frames_progressed = 0
-            count = 0
-            frames_in_song = (sample_rate * duration) / blocksize
-            while len(data):
+            print('Buffering ...')
+            for _ in range(buffersize):
                 data = f.read(blocksize)
-                count += blocksize
-                low_pass_filter.cutoff_frequency_hz = 50
-                # Process this chunk of audio, setting `reset` to `False`
-                # to ensure that reverb tails aren't cut off
-                output = board.process(data.T, sample_rate, reset=False)
-                # output = apply_bass_boost(output, cutoff=800)
-                q.put(output.T, timeout=timeout)
-            event.wait()  # Wait until playback is finished
-except KeyboardInterrupt:
-    print('\nInterrupted by user')
-    sd.stop()
+                if not len(data):
+                    break
+                q.put_nowait(data)  # Pre-fill queue
+
+            print('Starting Playback ...')
+            start = 0
+            with stream:
+                timeout = blocksize * buffersize / f.samplerate
+                frames_progressed = 0
+                count = 0
+                frames_in_song = (sample_rate * duration) / blocksize
+                while len(data):
+                    data = f.read(blocksize)
+                    count += blocksize
+                    low_pass_filter.cutoff_frequency_hz = 50
+                    # Process this chunk of audio, setting `reset` to `False`
+                    # to ensure that reverb tails aren't cut off
+                    output = board.process(data.T, sample_rate, reset=False)
+                    # output = apply_bass_boost(output, cutoff=800)
+                    q.put(output.T, timeout=timeout)
+                event.wait()  # Wait until playback is finished
+    except KeyboardInterrupt:
+        print('\nInterrupted by user')
+        sd.stop()
+
+if __name__ == "__main__":
+    play_audio()
