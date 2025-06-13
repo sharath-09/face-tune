@@ -1,3 +1,4 @@
+from pathlib import Path
 import queue
 import threading
 import numpy as np
@@ -17,7 +18,7 @@ from stream import Stream
 input_device_name = AudioStream.default_input_device_name
 output_device_name = AudioStream.default_output_device_name
 AUDIO_1 = "SMEEGLE.mp3"
-AUDIO_2 = "back_2_me.mp3"
+AUDIO_2 = Path("audio_samples", "back_2_me.mp3")
 
 duration = 0
 sample_rate = 48000
@@ -29,7 +30,7 @@ buffersize = 20
 
 q = queue.Queue(maxsize=buffersize)
 
-with AudioFile(AUDIO_2) as f:
+with AudioFile(str(AUDIO_2)) as f:
     print("Sample rate: ", f.samplerate)
     duration = f.duration
     sample_rate = f.samplerate
