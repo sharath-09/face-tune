@@ -29,5 +29,5 @@ def get_slope(lmk_1: np.ndarray, lmk_2: np.ndarray):
     print(lmk_2.shape)
     
     # slope, _, _, _, _= linregress(lmk_1.tolist(), lmk_2.tolist())
-    slope = lmk_1[-1] - lmk_2[-1]
-    return slope
+    y_slope = lmk_2[-1] - lmk_1[-1]
+    return y_slope

@@ -8,8 +8,13 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 insightface = "^0.7.3"
-onnxruntime = "^1.20.1"
+onnxruntime = "1.20.0"
 scipy = "^1.15.1"
+pedalboard = "^0.9.16"
+sounddevice = "^0.5.1"
+ffmpeg-python = "^0.2.0"
+soundfile = "^0.13.1"
+matplotlib = "^3.10.3"
 
 [tool.poetry.group.dev.dependencies]
 mdformat = "^0.7.19"
