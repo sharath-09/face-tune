@@ -15,10 +15,11 @@ sounddevice = "^0.5.1"
 ffmpeg-python = "^0.2.0"
 soundfile = "^0.13.1"
 matplotlib = "^3.10.3"
+gradio = "^5.34.2"
 
 [tool.poetry.group.dev.dependencies]
 mdformat = "^0.7.19"
-ruff = "^0.6.8"
+ruff = "^0.9.3"
 mypy = "^1.11.2"
 
 [build-system]
