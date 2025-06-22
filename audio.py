@@ -26,7 +26,6 @@ num_channels = 2
 blocksize = 1024
 buffersize = 20
 
-# stream = Stream()
 
 q = queue.Queue(maxsize=buffersize)
 

@@ -7,6 +7,9 @@ from pathlib import Path
 
 PARENT_PATH = Path(__file__).parent
 
+
+def main():
+
 if __name__ == '__main__':
     app = FaceAnalysis(root=str(PARENT_PATH), allowed_modules=['detection', 'landmark_2d_106'])
     app.prepare(ctx_id=0, det_size=(640, 640))
